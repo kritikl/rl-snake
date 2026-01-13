@@ -49,14 +49,14 @@ Example (minimal 4-value observation):
 
 The model uses Proximal Policy Optimization (PPO) from Stable Baselines3, with a multi-layer perceptron (MLP) policy.
 
-### 🏆 Reward Function
+### Reward Function
 
 The agent receives a positive reward of +10 when it eats the food. 
 Each time step incurs a small negative reward of -0.05 to encourage shorter paths.  
 The agent is rewarded with +0.5 for moving closer to the food and penalized with -0.3 if it moves further away. 
 Colliding with the walls or itself results in a large negative reward of -10 and ends the episode. 
 
-### ⚙️ Training Details
+### Training Details
 
 The snake agent is trained using the Proximal Policy Optimization (PPO) algorithm from Stable Baselines3 with an MLP policy. 
 The environment is vectorized across multiple processes for faster training, and a total of 2,000,000 timesteps are used to optimize the policy. 

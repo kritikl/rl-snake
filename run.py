@@ -4,21 +4,21 @@ import numpy as np
 from snake_env import SnakeEnv
 from stable_baselines3 import PPO
 
-# Setup Turtle Screen
+#screen
 screen = Screen()
 screen.setup(width=600, height=600)
 screen.bgcolor("black")
-screen.title("AI Snake Game")
+screen.title("Snake")
 screen.tracer(0)
 
-# Environment & Model
+#env + model
 env = SnakeEnv(grid_size=10)
-model = PPO.load("snake_ppo_model(plswork)", env=env)
+model = PPO.load("rl_snake/models/snake_ppo_v2", env=env)
 
 CELL_SIZE = 40  # 10x10 grid in 600x600
 OFFSET = - (env.grid_size * CELL_SIZE) // 2
 
-# Turtle Elements
+#turtle
 snake_turtles = []
 food_turtle = Turtle("circle")
 food_turtle.color("red")
@@ -35,7 +35,6 @@ game_over_display.hideturtle()
 game_over_display.color("red")
 game_over_display.penup()
 
-# Helper Functions
 def grid_to_pixel(x, y):
     """Convert grid coords (0..grid_size-1) → pixel coords."""
     return OFFSET + x * CELL_SIZE, OFFSET + y * CELL_SIZE
@@ -70,13 +69,13 @@ def show_game_over():
     game_over_display.write(f"GAME OVER\nFinal Score: {env.score}",
                             align="center", font=("Courier", 28, "bold"))
 
-# Initialize visuals
+#initialization
 update_snake_visual()
 update_food_visual()
 update_score_display()
 screen.update()
 
-# Run PPO Agent
+#run
 obs, _ = env.reset()
 done = False
 
@@ -90,7 +89,7 @@ while not done:
     screen.update()
     time.sleep(0.15)
 
-# Game Over
+#game over
 show_game_over()
 screen.update()
 

@@ -3,7 +3,6 @@ from gymnasium import spaces
 import numpy as np
 import random
 
-
 class SnakeEnv(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 5}
 
@@ -12,10 +11,10 @@ class SnakeEnv(gym.Env):
         self.grid_size = grid_size
         self.render_mode = render_mode
 
-        # Actions: up, down, left, right
+        #actions: up, down, left, right
         self.action_space = spaces.Discrete(4)
 
-        # Observation: head_x, head_y, food_x, food_y
+        #observation: head_x, head_y, food_x, food_y
         self.observation_space = spaces.Box(
             low=0,
             high=grid_size - 1,
@@ -43,6 +42,12 @@ class SnakeEnv(gym.Env):
         self.done = False
         self.score = 0
         self.prev_distance = self._distance(self.snake[0], self.food)
+
+        #tracking
+        self.visited_states = set()
+        self.loops_detected = 0
+        self.missed_foods = 0
+
         obs = self._get_obs()
         return obs, {}
 
@@ -57,14 +62,27 @@ class SnakeEnv(gym.Env):
         head_x, head_y = self.snake[0]
         new_head = (head_x + move[0], head_y + move[1])
 
-        reward = -0.05  # small penalty for time step
+        reward = -0.05
         self.done = False
 
-        # Wall collision
+        #loop detection
+        state = (new_head, tuple(self.snake), self.food)
+        if state in self.visited_states:
+            self.loops_detected += 1
+            reward -= 1  # penalize loops
+        self.visited_states.add(state)
+
+        #missed food detection
+        if self._distance(self.snake[0], self.food) == 1:
+            if self._distance(new_head, self.food) > 1:  # moved away instead of eating
+                self.missed_foods += 1
+                reward -= 0.5
+
+        #wall collision
         if not (0 <= new_head[0] < self.grid_size and 0 <= new_head[1] < self.grid_size):
             reward = -10
             self.done = True
-        # Self collision
+        #self collision
         elif new_head in self.snake:
             reward = -10
             self.done = True
@@ -77,7 +95,6 @@ class SnakeEnv(gym.Env):
                 self.score += 1
                 self._place_food()
             else:
-                # Reward movement toward food
                 if distance < self.prev_distance:
                     reward += 0.5
                 else:
@@ -87,7 +104,13 @@ class SnakeEnv(gym.Env):
             self.prev_distance = distance
 
         obs = self._get_obs()
-        return obs, reward, self.done, False, {}
+        info = {
+            "score": self.score,
+            "loops_detected": self.loops_detected,
+            "missed_foods": self.missed_foods,
+        }
+
+        return obs, reward, self.done, False, info
 
     def render(self):
         if self.render_mode == "human":
