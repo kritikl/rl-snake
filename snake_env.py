@@ -1,20 +1,18 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-import random
+
 
 class SnakeEnv(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 5}
 
-    def __init__(self, grid_size=10, render_mode=None):
+    def __init__(self, grid_size=10, render_mode=None, seed=None):
         super().__init__()
         self.grid_size = grid_size
         self.render_mode = render_mode
 
-        #actions: up, down, left, right
         self.action_space = spaces.Discrete(4)
 
-        #observation: head_x, head_y, food_x, food_y
         self.observation_space = spaces.Box(
             low=0,
             high=grid_size - 1,
@@ -22,11 +20,19 @@ class SnakeEnv(gym.Env):
             dtype=np.int32
         )
 
+        self.seed(seed)
         self.reset()
+
+    def seed(self, seed=None):
+        self.np_random, seed = gym.utils.seeding.np_random(seed)
+        self.action_space.seed(seed)
+        self.observation_space.seed(seed)
+        return [seed]
 
     def _place_food(self):
         while True:
-            fx, fy = random.randint(0, self.grid_size - 1), random.randint(0, self.grid_size - 1)
+            fx = self.np_random.integers(0, self.grid_size)
+            fy = self.np_random.integers(0, self.grid_size)
             if (fx, fy) not in self.snake:
                 self.food = (fx, fy)
                 break
@@ -36,6 +42,9 @@ class SnakeEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
+        if seed is not None:
+            self.seed(seed)
+
         self.snake = [(self.grid_size // 2, self.grid_size // 2)]
         self.direction = (0, 1)
         self._place_food()
@@ -43,7 +52,6 @@ class SnakeEnv(gym.Env):
         self.score = 0
         self.prev_distance = self._distance(self.snake[0], self.food)
 
-        #tracking
         self.visited_states = set()
         self.loops_detected = 0
         self.missed_foods = 0
@@ -57,7 +65,7 @@ class SnakeEnv(gym.Env):
         return np.array([head_x, head_y, food_x, food_y], dtype=np.int32)
 
     def step(self, action):
-        directions = [(0, -1), (0, 1), (-1, 0), (1, 0)]  # up, down, left, right
+        directions = [(0, -1), (0, 1), (-1, 0), (1, 0)]
         move = directions[action]
         head_x, head_y = self.snake[0]
         new_head = (head_x + move[0], head_y + move[1])
@@ -65,24 +73,20 @@ class SnakeEnv(gym.Env):
         reward = -0.05
         self.done = False
 
-        #loop detection
         state = (new_head, tuple(self.snake), self.food)
         if state in self.visited_states:
             self.loops_detected += 1
-            reward -= 1  # penalize loops
+            reward -= 1
         self.visited_states.add(state)
 
-        #missed food detection
         if self._distance(self.snake[0], self.food) == 1:
-            if self._distance(new_head, self.food) > 1:  # moved away instead of eating
+            if self._distance(new_head, self.food) > 1:
                 self.missed_foods += 1
                 reward -= 0.5
 
-        #wall collision
         if not (0 <= new_head[0] < self.grid_size and 0 <= new_head[1] < self.grid_size):
             reward = -10
             self.done = True
-        #self collision
         elif new_head in self.snake:
             reward = -10
             self.done = True
@@ -111,15 +115,3 @@ class SnakeEnv(gym.Env):
         }
 
         return obs, reward, self.done, False, info
-
-    def render(self):
-        if self.render_mode == "human":
-            grid = [["." for _ in range(self.grid_size)] for _ in range(self.grid_size)]
-            for x, y in self.snake:
-                grid[y][x] = "S"
-            fx, fy = self.food
-            grid[fy][fx] = "F"
-            print("\033c", end="")
-            for row in grid:
-                print(" ".join(row))
-            print(f"Score: {self.score}")

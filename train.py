@@ -1,12 +1,13 @@
 import os
-from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import BaseCallback
-from snake_env import SnakeEnv
-from logs.logger import TrainingLogger, EvaluationLogger
 import numpy as np
 
-
+from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.callbacks import BaseCallback
+
+from snake_env import SnakeEnv
+from logs.logger import TrainingLogger, EvaluationLogger
+from utils.seeding import seeding
+
 
 class TrainingLoggingCallback(BaseCallback):
     def __init__(self, model_name, train_logger, verbose=0):
@@ -14,7 +15,6 @@ class TrainingLoggingCallback(BaseCallback):
         self.model_name = model_name
         self.train_logger = train_logger
 
-        # episode tracking
         self.episode = 0
         self.total_steps = 0
         self.ep_reward = 0.0
@@ -31,15 +31,14 @@ class TrainingLoggingCallback(BaseCallback):
             self.train_logger.log(
                 self.model_name,
                 self.episode,
-                self.ep_reward,                     
-                info.get("score", 0),              
+                self.ep_reward,
+                info.get("score", 0),
                 info.get("loops_detected", 0),
                 info.get("missed_foods", 0),
-                self.ep_length,                     
-                self.total_steps
+                self.ep_length,
+                self.total_steps,
             )
 
-            #reset trackers
             self.ep_reward = 0.0
             self.ep_length = 0
             self.episode += 1
@@ -47,51 +46,75 @@ class TrainingLoggingCallback(BaseCallback):
         return True
 
 
-
 if __name__ == "__main__":
     os.makedirs("logs", exist_ok=True)
     os.makedirs("models", exist_ok=True)
 
-    model_name = "snake_ppo_v2"
+    SEED = 42
+    ALGO = "ppo"
+    TOTAL_TIMESTEPS = 2_000_000
 
-    train_env = SnakeEnv()
-    eval_env = SnakeEnv()
+    seeding(SEED)
 
-    model = PPO(
-        "MlpPolicy",
-        train_env,
-        n_steps=2048,
-        batch_size=64,
-        gamma=0.99,
-        learning_rate=3e-4,
-        verbose=1
-    )
+    model_name = f"snake_{ALGO}_seed{SEED}"
+
+    train_env = SnakeEnv(seed=SEED)
+    eval_env = SnakeEnv(seed=SEED)
+
+    if ALGO == "ppo":
+        model = PPO(
+            "MlpPolicy",
+            train_env,
+            n_steps=2048,
+            batch_size=64,
+            gamma=0.99,
+            learning_rate=3e-4,
+            seed=SEED,
+            verbose=1,
+        )
+
+    elif ALGO == "dqn":
+        model = DQN(
+            "MlpPolicy",
+            train_env,
+            learning_rate=1e-4,
+            buffer_size=100_000,
+            learning_starts=10_000,
+            batch_size=64,
+            gamma=0.99,
+            train_freq=4,
+            target_update_interval=10_000,
+            seed=SEED,
+            verbose=1,
+        )
+        assert train_env.action_space.n == 4
+
+    else:
+        raise ValueError("Unsupported algorithm")
 
     train_logger = TrainingLogger()
     eval_logger = EvaluationLogger()
 
     callback = TrainingLoggingCallback(
         model_name=model_name,
-        train_logger=train_logger 
+        train_logger=train_logger,
     )
 
-    #training
     model.learn(
-        total_timesteps=2_000_000,
-        callback=callback
+        total_timesteps=TOTAL_TIMESTEPS,
+        callback=callback,
     )
 
     model.save(f"models/{model_name}")
     train_logger.close()
 
-    # evaluation
     episodes = 20
     episode_rewards = []
 
     for _ in range(episodes):
         obs, _ = eval_env.reset()
         done = False
-        total_reward = 0
+        total_reward = 0.0
 
         while not done:
             action, _ = model.predict(obs, deterministic=True)
@@ -107,7 +130,7 @@ if __name__ == "__main__":
         model_name=model_name,
         mean_reward=mean_reward,
         std_reward=std_reward,
-        episodes_evaluated=episodes
+        episodes_evaluated=episodes,
     )
 
     eval_env.close()
