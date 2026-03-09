@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from stable_baselines3 import PPO, DQN
+from stable_baselines3 import PPO, DQN, A2C
 from stable_baselines3.common.callbacks import BaseCallback
 
 from snake_env import SnakeEnv
@@ -61,36 +61,49 @@ if __name__ == "__main__":
     train_env = SnakeEnv(seed=SEED)
     eval_env = SnakeEnv(seed=SEED)
 
-    if ALGO == "ppo":
-        model = PPO(
+    match ALGO:
+        case "ppo":
+            model = PPO(
+                "MlpPolicy",
+                train_env,
+                n_steps=2048,
+                batch_size=64,
+                gamma=0.99,
+                learning_rate=3e-4,
+                seed=SEED,
+                verbose=1,
+            )
+
+        case "dqn":
+            model = DQN(
+                "MlpPolicy",
+                train_env,
+                learning_rate=1e-4,
+                buffer_size=100_000,
+                learning_starts=10_000,
+                batch_size=64,
+                gamma=0.99,
+                train_freq=4,
+                target_update_interval=10_000,
+                seed=SEED,
+                verbose=1,
+            )
+            assert train_env.action_space.n == 4
+
+        case "a2c":
+            model = A2C(
             "MlpPolicy",
             train_env,
-            n_steps=2048,
-            batch_size=64,
+            learning_rate=7e-4,
             gamma=0.99,
-            learning_rate=3e-4,
+            n_steps=5,
+            ent_coef=0.01,
             seed=SEED,
-            verbose=1,
+            verbose=1
         )
 
-    elif ALGO == "dqn":
-        model = DQN(
-            "MlpPolicy",
-            train_env,
-            learning_rate=1e-4,
-            buffer_size=100_000,
-            learning_starts=10_000,
-            batch_size=64,
-            gamma=0.99,
-            train_freq=4,
-            target_update_interval=10_000,
-            seed=SEED,
-            verbose=1,
-        )
-        assert train_env.action_space.n == 4
-
-    else:
-        raise ValueError("Unsupported algorithm")
+        case _:
+            raise ValueError("Unsupported algorithm")
 
     train_logger = TrainingLogger()
     eval_logger = EvaluationLogger()

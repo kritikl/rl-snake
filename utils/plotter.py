@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 TRAIN_DB = "logs/training.db"
 EVAL_DB = "logs/evaluation.db"
 
-MODEL_NAMES = ["snake_ppo_seed42", "snake_dqn_seed42"]
+MODEL_NAMES = ["snake_ppo_seed42", "snake_dqn_seed42", "snake_a2c_seed42"]
 
-#training data
+#data
 def load_training_data(model_name):
     conn = sqlite3.connect(TRAIN_DB)
     query = """
@@ -23,13 +23,13 @@ def load_training_data(model_name):
 
 metrics = ["reward", "score", "loops_detected", "missed_foods", "length"]
 
-#training curves
+#training plots
 fig, axes = plt.subplots(len(metrics), 1, figsize=(10, 3 * len(metrics)), sharex=True)
 
 for model in MODEL_NAMES:
     df = load_training_data(model)
     for i, metric in enumerate(metrics):
-        # smooth reward and score for readability
+        #smooth reward and score for readability
         if metric in ["reward", "score", "length"]:
             df[f"smoothed_{metric}"] = df[metric].rolling(window=50, min_periods=1).mean()
             axes[i].plot(df["total_steps"], df[f"smoothed_{metric}"], label=model)
