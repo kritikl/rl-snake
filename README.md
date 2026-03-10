@@ -62,3 +62,43 @@ The snake agent is trained using the Proximal Policy Optimization (PPO) algorith
 The environment is vectorized across multiple processes for faster training, and a total of 2,000,000 timesteps are used to optimize the policy. 
 
 
+## Training Performance
+
+The agent was trained for **2M timesteps** using three reinforcement learning algorithms:
+- PPO
+- A2C
+- DQN
+
+![Training Metrics](logs/plot.png)
+
+## Evaluation Comparison
+
+The trained agents were evaluated over multiple episodes to measure average reward.
+
+![Evaluation Comparison](logs/plot2.png)
+
+## Final Evaluation Results
+
+| Algorithm | Mean Reward | Std. Dev. | Interpretation |
+|:----------|------------:|----------:|:---------------|
+| PPO       | ~220        | ±80       | Stable training, highest performance |
+| DQN       | ~45         | ±50       | Moderate learning, plateaus early |
+| A2C       | ~20         | ±30       | High variance, unstable learning |
+
+PPO clearly outperforms the other methods on this environment, achieving significantly higher rewards and more stable learning.
+
+### Observations
+
+- PPO shows steady reward growth throughout training.
+- DQN improves slightly but plateaus early.
+- A2C exhibits high variance and frequent catastrophic drops during training.
+
+This suggests that policy-gradient methods with clipped updates (PPO) handle the Snake environment more effectively than value-based approaches like DQN in this configuration.
+
+### Observations
+
+- PPO shows steady reward growth throughout training.
+- DQN improves slightly but plateaus early.
+- A2C exhibits high variance and frequent catastrophic drops during training.
+
+This suggests that policy-gradient methods with clipped updates (PPO) handle the Snake environment more effectively than value-based approaches like DQN in this configuration.
