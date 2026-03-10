@@ -1,6 +1,6 @@
 # Snake-RL-Agent
 
-This project uses **Reinforcement Learning (RL)** to train an agent to play the classic Snake game autonomously.  
+This project uses **Reinforcement Learning (RL)** to train and compare agents trained to play the classic Snake game autonomously.  
 The agent learns to survive longer, collect food efficiently, and avoid collisions 
 
 
@@ -86,14 +86,6 @@ The trained agents were evaluated over multiple episodes to measure average rewa
 | A2C       | ~20         | ±30       | High variance, unstable learning |
 
 PPO clearly outperforms the other methods on this environment, achieving significantly higher rewards and more stable learning.
-
-### Observations
-
-- PPO shows steady reward growth throughout training.
-- DQN improves slightly but plateaus early.
-- A2C exhibits high variance and frequent catastrophic drops during training.
-
-This suggests that policy-gradient methods with clipped updates (PPO) handle the Snake environment more effectively than value-based approaches like DQN in this configuration.
 
 ### Observations
 
